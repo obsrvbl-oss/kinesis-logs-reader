@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import unicode_literals
 from setuptools import setup, find_packages
+import sys
+
+PY2 = sys.version_info[0] == 2
 
 
 setup(
@@ -34,6 +38,7 @@ setup(
         'Intended Audience :: Information Technology',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
@@ -48,4 +53,5 @@ setup(
     test_suite='tests',
 
     install_requires=['botocore>=1.4.19', 'boto3>=1.3.1'],
+    tests_require=['mock'] if PY2 else [],
 )

@@ -1,3 +1,4 @@
+from __future__ import print_function, unicode_literals
 from argparse import ArgumentParser
 from datetime import datetime
 import sys
@@ -9,7 +10,7 @@ def print_stream(stream_name, start_time):
     reader = KinesisLogsReader(stream_name, start_time=start_time)
     for i, fields in enumerate(reader):
         if i == 0:
-            keys = list(fields.keys())
+            keys = sorted(fields.keys())
             print(*keys, sep='\t')
         print(*[fields[k] for k in keys], sep='\t')
 

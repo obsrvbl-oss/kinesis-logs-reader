@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import unicode_literals
 from json import loads
 
 from boto3.session import Session
@@ -43,6 +44,10 @@ class KinesisLogsReader(object):
 
     def __next__(self):
         return next(self.iterator)
+
+    def next(self):
+        # For Python 2 compatibility
+        return self.__next__()
 
     def _get_shard_ids(self):
         paginator = self.kinesis_client.get_paginator('describe_stream')
@@ -84,7 +89,8 @@ class KinesisLogsReader(object):
     def _reader(self):
         while True:
             for shard_id in self.shard_ids:
-                yield from self._read_shard(shard_id)
+                for item in self._read_shard(shard_id):
+                    yield item
 
             if all(self.shard_finished.values()):
                 break

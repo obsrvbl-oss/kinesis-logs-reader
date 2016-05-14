@@ -11,10 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import unicode_literals
 from datetime import datetime
 from json import dumps
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+
+try:
+    from unittest.mock import MagicMock, patch
+except ImportError:
+    from mock import MagicMock, patch
 
 from kinesis_logs_reader import KinesisLogsReader
 from kinesis_logs_reader.utils import gunzip_bytes, gzip_bytes
@@ -98,6 +103,13 @@ class UtilsTestCase(TestCase):
 
 
 class KinesisLogsReaderTestCase(TestCase):
+    def __init__(self, *args, **kwargs):
+        # Python 2 compatibility for tests
+        self.assertCountEqual = getattr(
+            self, 'assertCountEqual', self.assertItemsEqual
+        )
+        return super(KinesisLogsReaderTestCase, self).__init__(*args, **kwargs)
+
     def setUp(self):
         self.stream_name = 'test-stream'
         self.start_time = datetime(2016, 5, 13, 22, 55, 0)
