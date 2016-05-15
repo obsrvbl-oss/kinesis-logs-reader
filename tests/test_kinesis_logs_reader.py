@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import unicode_literals
 from datetime import datetime
+# from io import StringIO
 from json import dumps
 from unittest import TestCase
 
@@ -21,7 +22,13 @@ try:
 except ImportError:
     from mock import MagicMock, patch
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 from kinesis_logs_reader import KinesisLogsReader
+from kinesis_logs_reader.__main__ import main as cli_main
 from kinesis_logs_reader.utils import gunzip_bytes, gzip_bytes
 
 
@@ -48,7 +55,7 @@ def _create_event(index):
     }
 
 
-def get_shard_iterator(**kwargs):
+def _get_shard_iterator(**kwargs):
     return {'ShardIterator': '{}_iterator-0001'.format(kwargs['ShardId'])}
 
 
@@ -86,6 +93,20 @@ GET_RECORDS = {
 }
 
 
+def _get_client(*args, **kwargs):
+    # Mock the boto3 client so tests don't hit the AWS API
+    mock_client = MagicMock()
+    mock_client.get_paginator.return_value.paginate.return_value = (
+        [DESCRIBE_STREAM]
+    )
+    mock_client.get_shard_iterator.side_effect = _get_shard_iterator
+    mock_client.get_records.side_effect = (
+        lambda **kwargs: GET_RECORDS[kwargs['ShardIterator']]
+    )
+
+    return mock_client
+
+
 class UtilsTestCase(TestCase):
     def setUp(self):
         self.data = b'Test data'
@@ -105,26 +126,17 @@ class UtilsTestCase(TestCase):
 class KinesisLogsReaderTestCase(TestCase):
     def __init__(self, *args, **kwargs):
         # Python 2 compatibility for tests
-        self.assertCountEqual = getattr(
-            self, 'assertCountEqual', self.assertItemsEqual
-        )
+        if not hasattr(self, 'assertCountEqual'):
+            self.assertCountEqual = self.assertItemsEqual
+
         return super(KinesisLogsReaderTestCase, self).__init__(*args, **kwargs)
 
     def setUp(self):
         self.stream_name = 'test-stream'
         self.start_time = datetime(2016, 5, 13, 22, 55, 0)
 
-        # Mock the boto3 client so tests don't hit the AWS API
-        mock_client = MagicMock()
-        mock_client.get_paginator.return_value.paginate.return_value = (
-            [DESCRIBE_STREAM]
-        )
-        mock_client.get_shard_iterator.side_effect = get_shard_iterator
-        mock_client.get_records.side_effect = (
-            lambda **kwargs: GET_RECORDS[kwargs['ShardIterator']]
-        )
         self.reader = KinesisLogsReader(
-            self.stream_name, kinesis_client=mock_client
+            self.stream_name, kinesis_client=_get_client()
         )
 
     def test_init(self):
@@ -181,3 +193,31 @@ class KinesisLogsReaderTestCase(TestCase):
         actual = list(self.reader)
         expected = [_create_event(x) for x in range(6)]
         self.assertCountEqual(actual, expected)
+
+
+@patch(
+    'kinesis_logs_reader.kinesis_logs_reader.KinesisLogsReader._get_client',
+    _get_client
+)
+class MainTestCase(TestCase):
+    def test_cli_main(self):
+        argv = [
+            '--start-time="2016-05-15 01:02"',
+            '--time-format="%Y-%m-%d %H:%M"',
+            'test_stream',
+        ]
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            cli_main(argv)
+            output = mock_stdout.getvalue().splitlines()
+
+        event = _create_event(0)
+        event_keys = sorted(event.keys())
+        event_values = [event[k] for k in event_keys]
+
+        actual_header = output[0]
+        expected_header = '\t'.join(event_keys)
+        self.assertEqual(actual_header, expected_header)
+
+        actual_row = output[1]
+        expected_row = '\t'.join(str(x) for x in event_values)
+        self.assertEqual(actual_row, expected_row)

@@ -22,10 +22,7 @@ from .utils import gunzip_bytes
 class KinesisLogsReader(object):
     def __init__(self, stream_name, start_time=None, **kwargs):
         kinesis_client = kwargs.pop('kinesis_client', None)
-        if kinesis_client:
-            self.kinesis_client = kinesis_client
-        else:
-            self.kinesis_client = Session(**kwargs).client('kinesis')
+        self.kinesis_client = kinesis_client or self._get_client(**kwargs)
 
         self.stream_name = stream_name
         self.shard_ids = list(self._get_shard_ids())
@@ -48,6 +45,9 @@ class KinesisLogsReader(object):
     def next(self):
         # For Python 2 compatibility
         return self.__next__()
+
+    def _get_client(self, **kwargs):
+        return Session(**kwargs).client('kinesis')
 
     def _get_shard_ids(self):
         paginator = self.kinesis_client.get_paginator('describe_stream')
