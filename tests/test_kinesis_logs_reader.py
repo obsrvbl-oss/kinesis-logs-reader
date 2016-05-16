@@ -210,6 +210,8 @@ class MainTestCase(TestCase):
             cli_main(argv)
             output = mock_stdout.getvalue().splitlines()
 
+        self.assertEqual(len(output), 7)
+
         event = _create_event(0)
         event_keys = sorted(event.keys())
         event_values = [event[k] for k in event_keys]
@@ -221,3 +223,11 @@ class MainTestCase(TestCase):
         actual_row = output[1]
         expected_row = '\t'.join(str(x) for x in event_values)
         self.assertEqual(actual_row, expected_row)
+
+    def test_cli_count(self):
+        argv = ['--count=2', 'test_stream']
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            cli_main(argv)
+            output = mock_stdout.getvalue().splitlines()
+
+        self.assertEqual(len(output), 3)

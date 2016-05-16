@@ -7,10 +7,10 @@ import sys
 from .kinesis_logs_reader import KinesisLogsReader
 
 
-def print_stream(stream_name, start_time):
+def print_stream(stream_name, start_time, stop_after):
     reader = KinesisLogsReader(stream_name, start_time=start_time)
-    for i, fields in enumerate(reader):
-        if i == 0:
+    for i, fields in enumerate(reader, 1):
+        if i == 1:
             keys = sorted(fields.keys())
             print(*keys, sep='\t')
         try:
@@ -18,6 +18,8 @@ def print_stream(stream_name, start_time):
         except IOError as e:
             if e.errno == EPIPE:
                 pass
+        if i == stop_after:
+            break
 
 
 def main(argv=None):
@@ -33,6 +35,12 @@ def main(argv=None):
         help='Time from which to start reading (default: beginning of stream)'
     )
     argument_parser.add_argument(
+        '--count',
+        type=int,
+        default=0,
+        help='Number of records to return (default: 0, which is "no limit")'
+    )
+    argument_parser.add_argument(
         '--time-format',
         type=str,
         default='%Y-%m-%d %H:%M:%S',
@@ -45,7 +53,7 @@ def main(argv=None):
     else:
         start_time = None
 
-    print_stream(args.stream_name, start_time)
+    print_stream(args.stream_name, start_time, args.count)
 
 
 if __name__ == '__main__':
