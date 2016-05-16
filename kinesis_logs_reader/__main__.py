@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals
 from argparse import ArgumentParser
 from datetime import datetime
+from errno import EPIPE
 import sys
 
 from .kinesis_logs_reader import KinesisLogsReader
@@ -12,7 +13,11 @@ def print_stream(stream_name, start_time):
         if i == 0:
             keys = sorted(fields.keys())
             print(*keys, sep='\t')
-        print(*[fields[k] for k in keys], sep='\t')
+        try:
+            print(*[fields[k] for k in keys], sep='\t')
+        except IOError as e:
+            if e.errno == EPIPE:
+                pass
 
 
 def main(argv=None):
@@ -45,3 +50,4 @@ def main(argv=None):
 
 if __name__ == '__main__':
     main()
+    sys.stdout.close()
