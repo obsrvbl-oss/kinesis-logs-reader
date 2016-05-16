@@ -32,7 +32,9 @@ account_id	action	bytes	dstaddr	dstport	end	interface_id	log_status	packets	prot
 12345678901	ACCEPT	2143	192.0.2.1	22	1463236421	eni-25bed87f	OK	16	6	198.51.100.2	9224	1463236375	2
 ```
 
-The name of your Kinesis stream is required. The `--start-time` is optional; if not supplied the [`LATEST`](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) shard iterator will be used.
+The name of your Kinesis stream is required.
+* The `--start-time` argument is optional; if not supplied the [`LATEST`](http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) shard iterator will be used.
+* The `--count` argument is optional; if not supplied `0` will be used and all records from the starting point to the end of the stream will be returned.
 
 # Library usage
 
