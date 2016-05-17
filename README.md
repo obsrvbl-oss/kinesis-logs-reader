@@ -1,5 +1,8 @@
 ## Introduction
 
+[![Build Status](https://travis-ci.org/obsrvbl/kinesis-logs-reader.svg?branch=master)](https://travis-ci.org/obsrvbl/kinesis-logs-reader)
+[![Coverage Status](https://coveralls.io/repos/obsrvbl/kinesis-logs-reader/badge.svg?branch=master&service=github)](https://coveralls.io/github/obsrvbl/kinesis-logs-reader?branch=master)
+
 Amazon's CloudWatch Logs (CWL) service stores log data from many types of applications. For very large volumes of log data it may not be feasible to retrieve all records for processing using the standard CWL API. Fortunately, [CWL Subscriptions](https://aws.amazon.com/about-aws/whats-new/2015/06/amazon-cloudwatch-logs-subscriptions/) can automatically deliver log entries to Amazon Kinesis, which is suitable for real-time processing.
 
 [Observable Networks](https://observable.net/) uses Kinesis to retrieve [VPC Flow Logs](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html), which are an input to endpoint modeling for network security monitoring.
