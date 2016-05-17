@@ -34,9 +34,9 @@ class KinesisLogsReader(object):
             )
 
         self.shard_finished = {shard_id: False for shard_id in self.shard_ids}
+        self.iterator = self._reader()
 
     def __iter__(self):
-        self.iterator = self._reader()
         return self
 
     def __next__(self):
