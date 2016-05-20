@@ -1,0 +1,18 @@
+language: python
+
+python:
+    - "2.7"
+    - "3.3"
+    - "3.4"
+    - "3.5"
+    - "pypy"
+
+install:
+    - pip install --upgrade setuptools coveralls
+    - python setup.py develop
+
+script:
+    - coverage run --source=kinesis_logs_reader setup.py test
+
+after_success:
+    - coveralls
