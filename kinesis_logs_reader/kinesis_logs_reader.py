@@ -20,8 +20,17 @@ from .utils import gunzip_bytes
 
 
 class KinesisLogsReader(object):
-    def __init__(self, stream_name, start_time=None, **kwargs):
-        kinesis_client = kwargs.pop('kinesis_client', None)
+    def __init__(
+        self, stream_name, start_time=None, kinesis_client=None, **kwargs
+    ):
+        """
+        Return an iterable object that will yield log events as Python dicts.
+        * `stream_name` identifies the Kinesis stream with a log subscription.
+        * `start_time` is a Python datetime object; Records from this Timestamp
+        on will be returned. By default the latest records will be returned.
+        * `kinesis_client` is a boto3.client object. By default one will be
+        created with the given `kwargs`.
+        """
         self.kinesis_client = kinesis_client or self._get_client(**kwargs)
 
         self.stream_name = stream_name
@@ -34,9 +43,9 @@ class KinesisLogsReader(object):
             )
 
         self.shard_finished = {shard_id: False for shard_id in self.shard_ids}
+        self.iterator = self._reader()
 
     def __iter__(self):
-        self.iterator = self._reader()
         return self
 
     def __next__(self):
@@ -51,10 +60,9 @@ class KinesisLogsReader(object):
 
     def _get_shard_ids(self):
         paginator = self.kinesis_client.get_paginator('describe_stream')
-        response_iterator = paginator.paginate(StreamName=self.stream_name)
-
-        for response in response_iterator:
-            for shard in response['StreamDescription']['Shards']:
+        for page in paginator.paginate(StreamName=self.stream_name):
+            stream_description = page.get('StreamDescription', {})
+            for shard in stream_description.get('Shards', []):
                 yield shard['ShardId']
 
     def _get_shard_iterator(self, shard_id, start_time=None):
@@ -75,12 +83,12 @@ class KinesisLogsReader(object):
         self.shard_iterators[shard_id] = response['NextShardIterator']
         self.shard_finished[shard_id] = response['MillisBehindLatest'] == 0
 
-        for record in response['Records']:
+        for record in response.get('Records', []):
             gz_data = record['Data']
             raw_data = gunzip_bytes(gz_data)
             data = loads(raw_data.decode('utf-8'))
 
-            if data['messageType'] != 'DATA_MESSAGE':
+            if data.get('messageType') != 'DATA_MESSAGE':
                 continue
 
             for flow_record in data.get('logEvents', []):

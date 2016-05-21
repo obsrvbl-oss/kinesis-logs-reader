@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 from argparse import ArgumentParser
 from datetime import datetime
 from errno import EPIPE
+from itertools import chain
 import sys
 
 from .kinesis_logs_reader import KinesisLogsReader
@@ -9,10 +10,15 @@ from .kinesis_logs_reader import KinesisLogsReader
 
 def print_stream(stream_name, start_time, stop_after):
     reader = KinesisLogsReader(stream_name, start_time=start_time)
-    for i, fields in enumerate(reader, 1):
-        if i == 1:
-            keys = sorted(fields.keys())
-            print(*keys, sep='\t')
+
+    # Peek into the first row to determine the header
+    first_row = next(reader)
+    keys = sorted(first_row.keys())
+    print(*keys, sep='\t')
+
+    # Join the first row with the rest of the rows and print them
+    iterable = chain([first_row], reader)
+    for i, fields in enumerate(iterable, 1):
         try:
             print(*[fields[k] for k in keys], sep='\t')
         except IOError as e:
