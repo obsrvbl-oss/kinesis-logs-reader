@@ -1,7 +1,6 @@
 from __future__ import print_function, unicode_literals
 from argparse import ArgumentParser
 from datetime import datetime
-from errno import EPIPE
 from itertools import chain
 import sys
 
@@ -19,11 +18,7 @@ def print_stream(stream_name, start_time, stop_after):
     # Join the first row with the rest of the rows and print them
     iterable = chain([first_row], reader)
     for i, fields in enumerate(iterable, 1):
-        try:
-            print(*[fields[k] for k in keys], sep='\t')
-        except IOError as e:
-            if e.errno == EPIPE:
-                pass
+        print(*[fields[k] for k in keys], sep='\t')
         if i == stop_after:
             break
 
@@ -64,4 +59,3 @@ def main(argv=None):
 
 if __name__ == '__main__':
     main()
-    sys.stdout.close()
